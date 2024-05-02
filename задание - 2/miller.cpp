@@ -10,35 +10,59 @@ using namespace std;
 
 vector<int> primes(int n);
 pair<int, vector<int>> builder_test(vector<int> prime, int bit);
-pair<int, int> test_millera(vector<int> prime, int bit, int t);
+int test_millera(int n, int t, vector<int> q);
 
 int power_mod(int a, int b, int n);
 int rn(int a, int b);
 
+void print_results(const vector<int>& res, const vector<string>& res_ver_test, const vector<int>& otvegnutie);
+
 int main() {
-    int size_primes = 1000;
+    int size_primes = 500;
     vector<int> prime = primes(size_primes);
 
     int bit = 0;
     cin >> bit;
 
-    vector<int> res;
-    int r;
+    vector<int> q;
     int n;
+    int k = 0;
+    int probability;
+
+    vector<int> res;
+    vector<string> res_ver_test;
+    vector<int> otvegnutie;
+
+
 
     while(res.size() != 10) {
-        tie(n, r) = test_millera(prime, bit, 10);
+        tie(n, q) = builder_test(prime, bit);
+        probability = test_millera(n, 10, q);
 
-        if (r == 1) {
+        if(probability == 1) {
             if (find(res.begin(), res.end(), n) == res.end()) {
                 res.push_back(n);
+
+                probability = test_millera(n, 1, q);
+                if(probability == 1) {
+                    res_ver_test.push_back("+");
+                }
+
+                else{
+                    res_ver_test.push_back("-");
+                }
+
+                otvegnutie.push_back(k);
+                k = 0;
             }
+        }
+
+        else{
+            k++;
         }
     }
 
-    for (int num : res) {
-        cout << num << " ";
-    }
+    print_results(res, res_ver_test, otvegnutie);
 }
 
 vector<int> primes(int n) {
@@ -64,10 +88,10 @@ pair<int, vector<int>> builder_test(vector<int> prime, int bit) {
     int max_index = 0;
     int max_pow = 1;
 
-    for (; prime[max_index] < pow(2, bit - 1); max_index++);
+    for (; (prime[max_index] < pow(2, bit - 1)) && max_index < prime.size(); max_index++);
     for (; pow(2, max_pow) < pow(2, bit - 1); max_pow++);
     
-    int64_t m = 1;
+    int m = 1;
     vector<int> q;
 
     while(true){
@@ -75,7 +99,7 @@ pair<int, vector<int>> builder_test(vector<int> prime, int bit) {
         int power = rn(1, max_pow);
         
         if (pow(prime[num], power)) {
-            if(m * pow(prime[num], power) < INT64_MAX) {
+            if(m * pow(prime[num], power) < INT32_MAX) {
                 m *= pow(prime[num], power);
                 q.push_back(prime[num]);
             }
@@ -99,11 +123,7 @@ pair<int, vector<int>> builder_test(vector<int> prime, int bit) {
     return make_pair(n, q);
 }
 
-pair<int, int> test_millera(vector<int> prime, int bit, int t) {
-    int n;
-    vector<int> q;
-    tie(n, q) = builder_test(prime, bit);
-
+int test_millera(int n, int t, vector<int> q) {
     vector<int> a;
     int aj;
 
@@ -117,26 +137,27 @@ pair<int, int> test_millera(vector<int> prime, int bit, int t) {
 
     for (int aj : a) {
         if (power_mod(aj, n - 1, n) != 1) {
-            return make_pair(n, 0);
+            return 0;
             break;
         }
     }
-
 
     bool flag = true;
     int i = 0;
     for (int aj : a) {
         if (q[i] != 0 && power_mod(aj, (n - 1) / q[i], n) != 1) {
             flag = false;
+            if(i < q.size()) {
+                i++;
+            }
         }
-        i++;
     }
 
     if (flag) {
-        return make_pair(n, 0);
+        return 0;
     }
 
-    return make_pair(n, 1);;
+    return 1;
 }
 
 int power_mod(int a, int b, int n) {
@@ -155,3 +176,11 @@ int rn(int a, int b) {
     return uniform_int_distribution<int>(a, b)(mt_rand);
 }
 
+void print_results(const vector<int>& res, const vector<string>& res_ver_test, const vector<int>& otvegnutie) {
+    cout << "Prime Numbers\tTest Results\tOccurrences" << endl;
+    cout << "----------------------------------------------" << endl;
+
+    for (size_t i = 0; i < res.size(); ++i) {
+        cout << res[i] << "\t\t" << res_ver_test[i] << "\t\t" << otvegnutie[i] << endl;
+    }
+}
