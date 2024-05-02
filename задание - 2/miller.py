@@ -1,130 +1,129 @@
 import random
 import math
 
-def test_miller(n, c, t):
-    n1 = n - 1
-    delit = []
-    for i in range(len(c)):
-        if n1 == 0 or c[i] > n1:
-            break
-        if n1 % c[i] == 0:
-            delit.append(c[i])
-            while n1 % c[i] == 0 and n1 != 0:
-                n1 = n1 // c[i]
-    a = []
-    while len(a) != t:
-        ai = random.randint(2, n)
-        if ai not in a:
-            a.append(ai)
-    for ai in a:
-        res = ai % n
-        for _ in range(2, n):
-            res *= ai
-            res = res % n
-        if res != 1:
-            return " - составное число", 0
-
-    for d in delit:
-        flag = True
-        for ai in a:
-            res = ai % n
-            for _ in range(2, (n - 1) // d + 1):
-                res = ai * res
-                res = res % n
-            if res != 1:
-                flag = False
-                break
-        if flag:
-            return " - вероятно, составное число", 0
-    return " - простое число", 1
-
-def resheto(n):
-    all_numbers = list(range(2, n + 1))
+def primes(n):
+    is_prime = [True] * (n + 1)
     primes = []
-    while all_numbers:
-        current_prime = all_numbers[0]
-        primes.append(current_prime)
-        all_numbers = [x for x in all_numbers if x % current_prime != 0]
+
+    for p in range(2, int(math.sqrt(n)) + 1):
+        if is_prime[p]:
+            for i in range(p * p, n + 1, p):
+                is_prime[i] = False
+
+    for p in range(2, n + 1):
+        if is_prime[p]:
+            primes.append(p)
+
     return primes
 
-def build_miller(bit, c, t):
-    while True:
-        glim = 0
-        z = 1
-        f = True
-        geted = []
-        while f and len(geted) < 1:
-            z = 1
-            for i in range(len(c)):
-                if c[i] > pow(2, bit - 1) - 1:
-                    break
-                max_val = int(math.log(pow(2, bit - 1), c[i]))
-                rpow = random.randint(1, max_val)
-                rnum = random.randint(0, rpow)
-                z *= pow(c[i], rnum)
-                if z > pow(2, bit - 1) - 1:
-                    z //= pow(c[i], rnum)
-                    if z >= pow(2, bit - 2):
-                        if z not in geted:
-                            geted.append(z)
-                        z = 1
-                        f = False
-        m = random.choice(geted)
-        n = 2 * m - 1
-        resultat = test_miller(n, c, t)
-        oleg = ''
-        if resultat[1] == 1:
-            res = test_miller(n, c, 1)
-            if res[1] == 0:
-                oleg = '-'
-            else:
-                oleg = "+"
-        else:
-            res = test_miller(n, c, 1)
-            if res[1] == 1:
-                glim += 1
-        if resultat[1] == 1:
-            return oleg, n, glim
+def builder_test(prime, bit):
+    max_index = 0
+    max_pow = 1
 
-def main():
-    bit = int(input("Введите количество бит: "))
-    c = resheto(500)
-    miller_res = []
-    miller_res_p = []
-    while len(miller_res) != 10:
-        miller_result = build_miller(bit, c, 10)
-        p = miller_result[1]
-        if p not in miller_res_p:
-            miller_res_p.append(p)
-            miller_res.append(miller_result)
-    print("+", end="")
-    for _ in range(10):
-        print("--------+", end="")
-    print("\n|", end="")
-    for i in range(10):
-        print(f"{i + 1:8}|", end="")
-    print("\n+", end="")
-    for _ in range(10):
-        print("--------+", end="")
-    print("\n|", end="")
-    for i in range(10):
-        print(f"{miller_res[i][1]:8}|", end="")
-    print("\n+", end="")
-    for _ in range(10):
-        print("--------+", end="")
-    print("\n|", end="")
-    for i in range(10):
-        print(f"       {miller_res[i][0]}|", end="")
-    print("\n+", end="")
-    for _ in range(10):
-        print("--------+", end="")
-    print("\n|", end="")
-    for i in range(10):
-        print(f"{miller_res[i][2]:8}|", end="")
-    print("\n+", end="")
-    for _ in range(10):
-        print("--------+", end="")
-    print()
+    while prime[max_index] < 2 ** (bit - 1) and max_index < len(prime):
+        max_index += 1
+    while 2 ** max_pow < 2 ** (bit - 1):
+        max_pow += 1
+
+    m = 1
+    q = []
+
+    while True:
+        num = random.randint(0, max_index)
+        power = random.randint(1, max_pow)
+
+        if prime[num] ** power:
+            if m * prime[num] ** power < 2 ** 31 - 1:
+                m *= prime[num] ** power
+                q.append(prime[num])
+
+        if m > 2 ** (bit - 2):
+            if m >= 2 ** (bit - 1):
+                m = 1
+                q.clear()
+            else:
+                break
+
+    n = 2 * m + 1
+
+    return n, q
+
+def test_millera(n, t, q):
+    a = []
+
+    while len(a) != t:
+        aj = random.randint(2, n - 1)
+
+        if aj not in a:
+            a.append(aj)
+
+    for aj in a:
+        if pow(aj, n - 1, n) != 1:
+            return 0
+
+    flag = True
+    i = 0
+    for aj in a:
+        if i < len(q) and q[i] != 0 and pow(aj, (n - 1) // q[i], n) != 1:
+            flag = False
+            if i < len(q):
+                i += 1
+
+    if flag:
+        return 0
+
+    return 1
+
+def power_mod(a, b, n):
+    result = 1
+    while b > 0:
+        if b % 2 == 1:
+            result = (result * a) % n
+        a = (a * a) % n
+        b //= 2
+    return result
+
+def rn(a, b):
+    return random.randint(a, b)
+
+def print_results(res, res_ver_test, otvegnutie):
+    print("Prime Numbers\tTest Results\tOccurrences")
+    print("----------------------------------------------")
+
+    for i in range(len(res)):
+        print(f"{res[i]}\t\t{res_ver_test[i]}\t\t{otvegnutie[i]}")
 
 if __name__ == "__main__":
-    main()
+    size_primes = 1000
+    prime = primes(size_primes)
+
+    bit = int(input())
+
+    q = []
+    k = 0
+    probability = 0
+
+    res = []
+    res_ver_test = []
+    otvegnutie = []
+
+    while len(res) != 10:
+        n, q = builder_test(prime, bit)
+        probability = test_millera(n, 10, q)
+
+        if probability == 1:
+            if n not in res:
+                res.append(n)
+
+                probability = test_millera(n, 1, q)
+                if probability == 1:
+                    res_ver_test.append("+")
+                else:
+                    res_ver_test.append("-")
+
+                otvegnutie.append(k)
+                k = 0
+        else:
+            k += 1
+
+    print_results(res, res_ver_test, otvegnutie)
