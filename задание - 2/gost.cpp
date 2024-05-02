@@ -1,137 +1,107 @@
 #include <iostream>
-#include <cmath>
-#include <cstdint>
-#include <random>
 #include <vector>
-#include <string>
-#include <tuple>
-#include <locale.h>
-#include <iomanip>
-
+#include <cmath>
+#include <random>
+#include <algorithm>
 
 using namespace std;
 
+vector<int> primes(int n);
+int build_new_from_old(vector<int> prime, int bit);
+int power_mod(int a, int b, int n);
 
-vector<int> resheto(int n) {
-    vector<int> all;
-    vector<int> b;
-    for (int i = 2; i <= n; i++) {
-        all.push_back(i);
-    }
-    int i = 0;
-    while (i < all.size()) {
-        b.clear();
-        for (int j = 0; j <= i; j++) {
-            b.push_back(all[j]);
-        }
-        for (int z = i + 1; z < all.size(); z++) {
-            if (all[z] % all[i] != 0) {
-                b.push_back(all[z]);
-            }
-        }
-        all.clear();
-        all = b;
-        i++;
-    }
-    return all;
-}
+int rn_int(int a, int b);
+double rn_double(int a, int b);
 
-double rn(double a, double b) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
-    // Создание распределения для заданного интервала [a, b] с одной цифрой после запятой
-    std::uniform_real_distribution<double> distribution(a, b);
-    double randomNumber = distribution(gen);
-
-    // Округляем результат до одной цифры после запятой
-    randomNumber = round(randomNumber * 10.0) / 10.0;
-    return randomNumber;
-
-}
-
-int build_new_from_old(int q, int bit) {
-    double n;
-    double zakaruchka;
-    int p;
-
-    while (true) {
-        zakaruchka = rn(0, 1);
-        n = pow(2, bit - 1) / q + (pow(2, bit - 1) * zakaruchka) / q;
-        if ((int)n % 2 == 1) {
-            n++;
-        }
-        for (int u = 0; true; u += 2) {
-            p = (n + u) * q + 1;
-            if (p > pow(2, bit)) {
-                break;
-            }
-            bool flag1 = false;
-            bool flag2 = false;
-            int res = 2 % p;
-            for (int i = 2; i <= p - 1; i++) {
-                res *= 2;
-                res = res % p;
-            }
-            if (res == 1) {
-                flag1 = true;
-            }
-            res = 2 % p;
-            for (int i = 2; i <= n + u; i++) {
-                res *= 2;
-                res = res % p;
-            }
-            if (res != 1) {
-                flag2 = true;
-            }
-            if (flag2 && flag1) {
-                return p;
-            }
-        }
-    }
-}
-
-
+void print_res(vector<int> res);
 
 int main() {
-    setlocale(LC_ALL, "russian");
-
-    vector<int> c = resheto(500);
+    vector<int> prime = primes(500);
 
     int bit;
     cin >> bit;
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
+    vector<int> res;
+    while (res.size() != 10) {
+        int p = build_new_from_old(prime, bit);
 
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << i + 1 << "|";
+        if (find(res.begin(), res.end(), p) == res.end()) {
+            res.push_back(p);
+        }
     }
-    cout << endl;
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
+    print_res(res);
+}
+
+vector<int> primes(int n) {
+    vector<bool> is_prime(n + 1, true);
+    vector<int> primes;
+
+    for (int p = 2; p * p <= n; ++p) {
+        if (is_prime[p]) {
+            for (int i = p * p; i <= n; i += p)
+                is_prime[i] = false;
+        }
     }
-    cout << endl;
 
-    cout << "|";
-    int rand = rn(0, (c.size() - 10) / 10) * 10;
-    for (int i = 0; i < 10; i++) {
-        int oleg = c[rand + i];
-        cout << setw(8) << build_new_from_old(c[rand + i], bit) << "|";
+    for (int p = 2; p <= n; ++p) {
+        if (is_prime[p])
+            primes.push_back(p);
     }
-    cout << endl;
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
+    return primes;
+}
+
+int build_new_from_old(vector<int> prime, int bit) {
+    int q;
+    int max_index = 0;
+    int p;
+
+    for (; prime[max_index] < pow(2, bit / 2); max_index++);
+
+    while (true) {
+        q = prime[rn_int(0, max_index)];
+        if (q > pow(2, (bit / 2) - 1) && q <= pow(2, bit / 2) - 1) break;
     }
-    cout << endl;
 
-    return 0;
+    while (true) {
+        double zakaruchka = rn_double(0, 1);
+        double n = (pow(2, bit - 1) / q) + (pow(2, bit - 1) * zakaruchka / q);
+
+        if ((int)n % 2 == 1) n++;
+
+        for (int u = 0; true; u += 2) {
+            p = (n + u) * q + 1;
+            if (p > pow(2, bit)) break;
+
+            if (power_mod(2, p - 1, p) == 1 && power_mod(2, n + u, p) != 1) return p;
+        }
+    }
+}
+
+int power_mod(int a, int b, int n) {
+    int result = 1;
+    while (b > 0) {
+        if (b % 2 == 1)
+            result = (result * a) % n;
+        a = (a * a) % n;
+        b /= 2;
+    }
+    return result;
+}
+
+int rn_int(int a, int b) {
+    static mt19937 mt_rand(random_device{}());
+    return uniform_int_distribution<int>(a, b)(mt_rand);
+}
+
+double rn_double(int a, int b) {
+    static mt19937 mt_rand(random_device{}());
+    return uniform_real_distribution<double>(a, b)(mt_rand);
+}
+
+void print_res(vector<int> res) {
+    for (int i = 0; i < res.size(); i++) {
+        cout << i + 1 << "\t\t" << "|" << "\t\t" << res[i] << endl;
+    }
 }
