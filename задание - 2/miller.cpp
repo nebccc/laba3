@@ -1,262 +1,157 @@
 #include <iostream>
-#include <cmath>
-#include <cstdint>
-#include <random>
 #include <vector>
-#include <string>
 #include <tuple>
-#include <locale.h>
-#include <iomanip>
-
+#include <cmath>
+#include <random>
+#include <limits>
+#include <algorithm>
 
 using namespace std;
 
-tuple<string, int> test_miller(int n, vector<int>& c, int t);
+vector<int> primes(int n);
+pair<int, vector<int>> builder_test(vector<int> prime, int bit);
+pair<int, int> test_millera(vector<int> prime, int bit, int t);
 
-vector<int> resheto(int n) {
-    vector<int> all;
-    vector<int> b;
-    for (int i = 2; i <= n; i++) {
-        all.push_back(i);
-    }
-    int i = 0;
-    while (i < all.size()) {
-        b.clear();
-        for (int j = 0; j <= i; j++) {
-            b.push_back(all[j]);
-        }
-        for (int z = i + 1; z < all.size(); z++) {
-            if (all[z] % all[i] != 0) {
-                b.push_back(all[z]);
-            }
-        }
-        all.clear();
-        all = b;
-        i++;
-    }
-    return all;
-}
+int power_mod(int a, int b, int n);
+int rn(int a, int b);
 
-int rn(int a, int n) {
-    // Инициализация генератора случайных чисел
-    random_device rd;
-    mt19937 gen(rd());
+int main() {
+    int size_primes = 1000;
+    vector<int> prime = primes(size_primes);
 
-    // Создание распределения для заданного диапазона [a, n]
-    uniform_int_distribution<int> distribution(a, n);
+    int bit = 0;
+    cin >> bit;
 
-    // Генерация случайного числа в заданном диапазоне и возврат его
-    return distribution(gen);
-}
-
-tuple<string, int, int> build_miller(int bit, vector<int>& c, int t) {
-    tuple<string, int> resultat = { "", 0 };
-
-    vector<int> geted;
-    int z = 1;
-    bool f = true;
-    int rnum;
-    int rind;
-    int rpow;
-    int max;
-    int m;
+    vector<int> res;
+    int r;
     int n;
-    int glim = 0;
-    string oleg;
 
-    while (true) {
-        z = 1;
-        f = true;
-        geted = {};
+    while(res.size() != 10) {
+        tie(n, r) = test_millera(prime, bit, 10);
 
-        while (f && geted.size() < 1) {
-            z = 1;
-            for (int i = 0; i < c.size(); i++) {
-                if (c[i] > pow(2, bit - 1) - 1) {
-                    break;
-                }
-                for (max = 1; pow(c[i], max) <= pow(2, bit - 1); max++) {
-                }
-                rpow = rn(1, max - 1);
-                rnum = rn(0, rpow);
-                z *= pow(c[i], rnum);
-                if (z > pow(2, bit - 1) - 1) {
-                    z /= pow(c[i], rnum);
-                    if (z >= pow(2, bit - 2)) {
-                        if (find(geted.begin(), geted.end(), z) >= geted.end()) {
-                            geted.push_back(z);
-                        }
-                        z = 1;
-                        f = false;
-                    }
-                }
+        if (r == 1) {
+            if (find(res.begin(), res.end(), n) == res.end()) {
+                res.push_back(n);
             }
         }
-        rnum = rn(0, geted.size() - 1);
-        int m = geted[rnum];
-        int n = 2 * m - 1;
-        resultat = test_miller(n, c, t);
-        tuple<string, int> result_ver;
-        if (get<1>(resultat) == 0) {
-            result_ver = test_miller(n, c, 1);
-            if (get<1>(result_ver) == 1){
-                glim++;
-            }
-        }
-        else {
-            result_ver = test_miller(n, c, 1);
-            if (get<1>(result_ver) == 1) {
-                oleg = '+';
-            }
-            else {
-                oleg = '-';
-            }
-        }
-        if (get<1>(resultat) == 1) {
-            return make_tuple(oleg, n, glim);
-        }
+    }
+
+    for (int num : res) {
+        cout << num << " ";
     }
 }
 
-tuple<string, int> test_miller(int n, vector<int>& c, int t) {
-    int n1 = n - 1;
-    vector<int> delit;
-    for (int i = 0; i < c.size(); i++) {
-        if (n1 == 0 || c[i] > n1) {
-            break;
+vector<int> primes(int n) {
+    vector<bool> is_prime(n + 1, true);
+    vector<int> primes;
+
+    for (int p = 2; p * p <= n; ++p) {
+        if (is_prime[p]) {
+            for (int i = p * p; i <= n; i += p)
+                is_prime[i] = false;
         }
-        if (n1 % c[i] == 0) {
-            delit.push_back(c[i]);
-            while (n1 % c[i] == 0 && n1 != 0) {
-                n1 = n1 / c[i];
+    }
+
+    for (int p = 2; p <= n; ++p) {
+        if (is_prime[p])
+            primes.push_back(p);
+    }
+
+    return primes;
+}
+
+pair<int, vector<int>> builder_test(vector<int> prime, int bit) {
+    int max_index = 0;
+    int max_pow = 1;
+
+    for (; prime[max_index] < pow(2, bit - 1); max_index++);
+    for (; pow(2, max_pow) < pow(2, bit - 1); max_pow++);
+    
+    int64_t m = 1;
+    vector<int> q;
+
+    while(true){
+        int num = rn(0, max_index);
+        int power = rn(1, max_pow);
+        
+        if (pow(prime[num], power)) {
+            if(m * pow(prime[num], power) < INT64_MAX) {
+                m *= pow(prime[num], power);
+                q.push_back(prime[num]);
             }
         }
-    }
-    vector<int> a;
-    int ai;
-    while (a.size() != t) {
-        ai = rn(2, n - 1);
-        if (find(a.begin(), a.end(), ai) >= a.end()) {
-            a.push_back(ai);
-        }
-    }
-    int res = 1;
-    int promez;
-    for (int i = 0; i < a.size(); i++) {
-        res = a[i] % n;
-        for (int j = 2; j <= n - 1; j++) {
-            res *= a[i];
-            res = res % n;
-        }
-        if (res != 1) {
-            return make_tuple(" - составное число", 0);
-        }
-    }
-    int res2;
-    double prom;
-    bool flag = true;
-    double n32 = (double)(n - 1);
-    double deliti;
-    for (int i = 0; i < delit.size(); i++) {
-        flag = true;
-        for (int j = 0; j < a.size(); j++) {
-            res2 = a[j] % n;
-            deliti = (double)delit[i];
-            prom = n32 / deliti;
-            for (int d = 2; d <= prom; d++) {
-                res2 *= a[j];
-                res2 = res2 % n;
+
+        if(m > pow(2, bit - 2)){
+
+            if(m >= pow(2, bit - 1)){
+                m = 1;
+                q.clear();
             }
-            if (res2 != 1) {
-                flag = false;
+            
+            else{
                 break;
             }
         }
-        if (flag) {
-            return make_tuple(" - вероятно, составное число", 0);
-        }
     }
-    return make_tuple(" - простое число", 1);
+
+    int n = 2 * m + 1;
+
+    return make_pair(n, q);
 }
 
-int main() {
-    setlocale(LC_ALL, "russian");
-    vector <int> c;
-    int bit;
-    cin >> bit;
-    c = resheto(500);
-    int p;
-    vector<tuple<string, int, int>> miller_res;
-    vector<int> miller_res_p;
-    tuple<string, int, int> miller_result;
-    for (int i = 0; i < 10; i++) {
-        miller_result = build_miller(bit, c, 10);
-        p = get<1>(miller_result);
-        if (find(miller_res_p.begin(), miller_res_p.end(), p) >= miller_res_p.end()) {
-            miller_res_p.push_back(p);
-            miller_res.push_back(miller_result);
-        }
-        else {
-            i--;
+pair<int, int> test_millera(vector<int> prime, int bit, int t) {
+    int n;
+    vector<int> q;
+    tie(n, q) = builder_test(prime, bit);
+
+    vector<int> a;
+    int aj;
+
+    while (a.size() != t) {
+        aj = rn(2, n - 1);
+
+        if (find(a.begin(), a.end(), aj) == a.end()) {
+            a.push_back(aj);
         }
     }
-    int correct = 0;
-    int incorrect = 0;
-    int ress;
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
+    for (int aj : a) {
+        if (power_mod(aj, n - 1, n) != 1) {
+            return make_pair(n, 0);
+            break;
+        }
     }
-    cout << endl;
 
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << i + 1 << "|";
-    }
-    cout << endl;
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
+    bool flag = true;
+    int i = 0;
+    for (int aj : a) {
+        if (q[i] != 0 && power_mod(aj, (n - 1) / q[i], n) != 1) {
+            flag = false;
+        }
+        i++;
     }
-    cout << endl;
 
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << get<1>(miller_res[i]) << "|";
+    if (flag) {
+        return make_pair(n, 0);
     }
-    cout << endl;
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << get<0>(miller_res[i]) << "|";
-    }
-    cout << endl;
-
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << get<2>(miller_res[i]) << "|";
-    }
-    cout << endl;
-
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-    
-    return 0;
+    return make_pair(n, 1);;
 }
+
+int power_mod(int a, int b, int n) {
+    long long result = 1;
+    while (b > 0) {
+        if (b % 2 == 1)
+            result = (result * a) % n;
+        a = (a * a) % n;
+        b /= 2;
+    }
+    return result;
+}
+
+int rn(int a, int b) {
+    mt19937 mt_rand(random_device{}());
+    return uniform_int_distribution<int>(a, b)(mt_rand);
+}
+
