@@ -1,257 +1,192 @@
 #include <iostream>
-#include <cmath>
-#include <cstdint>
-#include <random>
 #include <vector>
-#include <string>
 #include <tuple>
-#include <locale.h>
-#include <iomanip>
-
+#include <cmath>
+#include <random>
+#include <limits>
+#include <algorithm>
 
 using namespace std;
 
-vector<int> resheto(int n) {
-    vector<int> all;
-    vector<int> b;
-    for (int i = 2; i <= n; i++) {
-        all.push_back(i);
-    }
-    int i = 0;
-    while (i < all.size()) {
-        b.clear();
-        for (int j = 0; j <= i; j++) {
-            b.push_back(all[j]);
-        }
-        for (int z = i + 1; z < all.size(); z++) {
-            if (all[z] % all[i] != 0) {
-                b.push_back(all[z]);
+vector<int> primes(int n);
+pair<int, vector<int>> builder_test(vector<int> prime, int bit);
+int test_poklin(int n, int t, vector<int> q);
+
+int power_mod(int a, int b, int n);
+int rn(int a, int b);
+
+void print_results(const vector<int>& res, const vector<string>& res_ver_test, const vector<int>& otvegnutie);
+
+int main() {
+    int size_primes = 500;
+    vector<int> prime = primes(size_primes);
+
+    int bit = 0;
+    cin >> bit;
+
+    vector<int> q;
+    int n;
+    int k = 0;
+    int probability;
+
+    vector<int> res;
+    vector<string> res_ver_test;
+    vector<int> otvegnutie;
+
+
+
+    while(res.size() != 10) {
+        tie(n, q) = builder_test(prime, bit);
+        probability = test_poklin(n, 10, q);
+
+        if(probability == 1) {
+            if (find(res.begin(), res.end(), n) == res.end()) {
+                res.push_back(n);
+
+                probability = test_poklin(n, 1, q);
+                if(probability == 1) {
+                    res_ver_test.push_back("+");
+                }
+
+                else{
+                    res_ver_test.push_back("-");
+                }
+
+                otvegnutie.push_back(k);
+                k = 0;
             }
         }
-        all.clear();
-        all = b;
-        i++;
+
+        else{
+            k++;
+        }
     }
-    return all;
+
+    print_results(res, res_ver_test, otvegnutie);
 }
 
-int rn(int a, int n) {
-    // Инициализация генератора случайных чисел
-    random_device rd;
-    mt19937 gen(rd());
+vector<int> primes(int n) {
+    vector<bool> is_prime(n + 1, true);
+    vector<int> primes;
 
-    // Создание распределения для заданного диапазона [a, n]
-    uniform_int_distribution<int> distribution(a, n);
+    for (int p = 2; p * p <= n; ++p) {
+        if (is_prime[p]) {
+            for (int i = p * p; i <= n; i += p)
+                is_prime[i] = false;
+        }
+    }
 
-    // Генерация случайного числа в заданном диапазоне и возврат его
-    return distribution(gen);
+    for (int p = 2; p <= n; ++p) {
+        if (is_prime[p])
+            primes.push_back(p);
+    }
+
+    return primes;
 }
-tuple<string, int> test_pokling(int n, vector<int> delit, int t) {
-    vector<int> a;
-    int ai;
-    while (a.size() != t) {
-        ai = rn(2, n - 1);
-        if (find(a.begin(), a.end(), ai) >= a.end()) {
-            a.push_back(ai);
-        }
-    }
-    int res = 1;
-    int promez;
-    for (int i = 0; i < a.size(); i++) {
-        res = a[i] % n;
-        for (int j = 2; j <= n - 1; j++) {
-            res *= a[i];
-            res = res % n;
-        }
-        if (res != 1) {
-            return make_tuple(" - составное число", 0);
-        }
-    }
-    int res2;
-    double prom;
-    bool flag = true;
-    double n32 = (double)(n - 1);
-    double deliti;
-    for (int j = 0; j < a.size(); j++) {
-        flag = true;
-        for (int i = 0; i < delit.size(); i++) {
-            res2 = a[j] % n;
-            deliti = (double)delit[i];
-            prom = n32 / deliti;
-            for (int d = 2; d <= prom; d++) {
-                res2 *= a[j];
-                res2 = res2 % n;
+
+pair<int, vector<int>> builder_test(vector<int> prime, int bit) {
+    int max_index = 0;
+    int max_pow = 1;
+
+    for (; (prime[max_index] < pow(2, (bit / 2) + 1)) && (max_index < prime.size()); max_index++);
+    for (; pow(2, max_pow) < pow(2, (bit / 2) + 1); max_pow++);
+    
+    int f = 1;
+    vector<int> q;
+
+    while(true){
+        int num = rn(0, max_index);
+        int power = rn(1, max_pow);
+        
+        if (pow(prime[num], power)) {
+            if(f * pow(prime[num], power) < INT32_MAX) {
+                f *= pow(prime[num], power);
+                q.push_back(prime[num]);
             }
-            if (res2 == 1) {
-                flag = false;
+        }
+
+        if(f > pow(2, (bit / 2))){
+
+            if(f >= pow(2, (bit / 2) + 1)){
+                f = 1;
+                q.clear();
+            }
+            
+            else{
                 break;
             }
         }
-        if (flag) {
-            return make_tuple(" - простое число", 1);
-        }
     }
-    return make_tuple(" - вероятно, составное число", 0);
+
+    int R;
+
+    do
+    {
+        R = rn(pow(2, (bit / 2) - 1) + 1, pow(2, bit / 2));
+    } while (R % 2 != 0);
+
+    int n = R * f + 1;
+    return make_pair(n, q);
 }
 
-tuple<string, int, int> build_pokling(int bit, vector<int>& c, int t) {
-    tuple<string, int> resultat = { "", 0 };
+int test_poklin(int n, int t, vector<int> q) {
+    vector<int> a;
+    int aj;
 
-    vector<int> geted;
-    int z = 1;
-    bool f = true;
-    int rnum;
-    int rind;
-    int rpow;
-    int max;
-    int m;
-    int n;
-    int glim = 0;
-    string oleg;
+    while (a.size() != t) {
+        aj = rn(2, n - 1);
 
-    while (true) {
-        z = 1;
-        f = true;
-        geted = {};
-        vector<int> delit;
-
-        while (f && geted.size() < 1) {
-            z = 1;
-            for (int i = 0; i < c.size(); i++) {
-                vector<int> delitt;
-                if (c[i] > pow(2, bit / 2 + 1) - 1) {
-                    break;
-                }
-                for (max = 1; pow(c[i], max) <= pow(2, bit / 2 + 1); max++) {
-                }
-                rpow = rn(1, max - 1);
-                rnum = rn(0, rpow);
-                z *= pow(c[i], rnum);
-                if (z > pow(2, bit / 2 + 1) - 1) {
-                    z /= pow(c[i], rnum);
-                    if (z >= pow(2, bit / 2)) {
-                        if (find(geted.begin(), geted.end(), z) >= geted.end()) {
-                            geted.push_back(z);
-                        }
-                        z = 1;
-                        f = false;
-                        delit = delitt;
-                    }
-                }
-                else {
-                    if (rnum != 0){
-                        delitt.push_back(c[i]);
-                    }
-                }
-            }
-        }
-        n = rn(pow(2, bit / 2 - 1), pow(2, bit / 2) - 1);
-        n = n * geted[0];
-        n++;
-        resultat = test_pokling(n, delit, t);
-        tuple<string, int> result_ver;
-        if (get<1>(resultat) == 0) {
-            result_ver = test_pokling(n, c, 1);
-            if (get<1>(result_ver) == 1) {
-                glim++;
-            }
-        }
-        else {
-            result_ver = test_pokling(n, c, 1);
-            if (get<1>(result_ver) == 1) {
-                oleg = '+';
-            }
-            else {
-                oleg = '-';
-            }
-        }
-        if (get<1>(resultat) == 1) {
-            return make_tuple(oleg, n, glim);
+        if (find(a.begin(), a.end(), aj) == a.end()) {
+            a.push_back(aj);
         }
     }
 
+    for (int aj : a) {
+        if (power_mod(aj, n - 1, n) != 1) {
+            return 0;
+            break;
+        }
+    }
+
+    bool flag = true;
+    int i = 0;
+    for (int aj : a) {
+        if (q[i] != 0 && power_mod(aj, (n - 1) / q[i], n) == 1) {
+            flag = false;
+
+            return 0;
+            break;
+        }
+    }
+
+    if (flag) {
+        return 1;
+    }
+
+    return 1;
 }
 
-
-int main() {
-    setlocale(LC_ALL, "russian");
-    vector <int> c;
-    int bit;
-    cin >> bit;
-    c = resheto(500);
-
-    int p;
-    vector<tuple<string, int, int>> pokling_res;
-    vector<int> pokling_res_p;
-    tuple<string, int, int> pokling_result;
-    for (int i = 0; i < 10; i++) {
-        pokling_result = build_pokling(bit, c, 10);
-        p = get<1>(pokling_result);
-        if (find(pokling_res_p.begin(), pokling_res_p.end(), p) >= pokling_res_p.end()) {
-            pokling_res_p.push_back(p);
-            pokling_res.push_back(pokling_result);
-        }
-        else {
-            i--;
-        }
+int power_mod(int a, int b, int n) {
+    long long result = 1;
+    while (b > 0) {
+        if (b % 2 == 1)
+            result = (result * a) % n;
+        a = (a * a) % n;
+        b /= 2;
     }
-    int correct = 0;
-    int incorrect = 0;
-    int ress;
+    return result;
+}
 
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
+int rn(int a, int b) {
+    mt19937 mt_rand(random_device{}());
+    return uniform_int_distribution<int>(a, b)(mt_rand);
+}
+
+void print_results(const vector<int>& res, const vector<string>& res_ver_test, const vector<int>& otvegnutie) {
+    cout << "Prime Numbers\tTest Results\tOccurrences" << endl;
+    cout << "----------------------------------------------" << endl;
+
+    for (size_t i = 0; i < res.size(); ++i) {
+        cout << res[i] << "\t\t" << res_ver_test[i] << "\t\t" << otvegnutie[i] << endl;
     }
-    cout << endl;
-
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << i + 1 << "|";
-    }
-    cout << endl;
-
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << get<1>(pokling_res[i]) << "|";
-    }
-    cout << endl;
-
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << get<0>(pokling_res[i]) << "|";
-    }
-    cout << endl;
-
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-
-    cout << "|";
-    for (int i = 0; i < 10; i++) {
-        cout << setw(8) << get<2>(pokling_res[i]) << "|";
-    }
-    cout << endl;
-
-    cout << "+";
-    for (int i = 0; i < 10; i++) {
-        cout << "--------+";
-    }
-    cout << endl;
-
-    return 0;
 }
